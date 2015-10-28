@@ -13,6 +13,7 @@ ps axjf
 
 AZUREUSER=$1
 PASSWORD=$2
+NUM_SERVERS=$3
 HOMEDIR="/home/$AZUREUSER"
 VMNAME=`hostname`
 echo "User: $AZUREUSER"
@@ -137,7 +138,9 @@ echo "[mysql-server]" >> inventory.ini
 echo "10.0.0.20" >> inventory.ini
 echo "" >> inventory.ini
 echo "[edxapp-server]" >> inventory.ini
-echo "localhost" >> inventory.ini
+for i in `seq 1 $NUM_SERVERS`; do
+  echo "10.0.0.1$i" >> inventory.ini
+done
 
 curl https://raw.githubusercontent.com/tkeemon/openedx-azure-scalable/master/server-vars.yml > /tmp/server-vars.yml
 
