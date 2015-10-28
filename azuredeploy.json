@@ -99,15 +99,15 @@
     }
   },
   "variables": {
-    "vmName": "openedx-multi",
-    "vmAppName": "openedx-multi-app",
-    "vmMySqlName": "openedx-multi-mysql",
-    "vmMongoName": "openedx-multi-mongo",
+    "vmAppName": "openedx-scalable-app",
+    "vmMySqlName": "openedx-scalable-mysql",
+    "vmMongoName": "openedx-scalable-mongo",
     "availabilitySetNodes": "avail-set",
     "osImagePublisher": "Canonical",
     "osImageOffer": "UbuntuServer",
     "osImageSKU" : "12.04.5-LTS",
     "publicIPAddressName": "myPublicIP",
+    "publicIpAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
     "publicIPAddressNameMySql": "myPublicIPMySql",
     "publicIPAddressNameMongo": "myPublicIPMongo",
     "publicIPAddressType": "Dynamic",
@@ -126,7 +126,12 @@
     "nsgName": "node-nsg",
     "nsgID": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('nsgName'))]",
     "storageAccountType": "Standard_LRS",
-    "vhdBlobContainer": "vhds"
+    "vhdBlobContainer": "vhds",
+    "lbName": "openedxApplicationLB",
+    "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('lbName'))]",
+    "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/LoadBalancerBackend')]",
+    "lbProbeLMSID": "[concat(variables('lbID'),'/probes/tcpProbeLMS')]",
+    "lbProbeCMSID": "[concat(variables('lbID'),'/probes/tcpProbeCMS')]"
   },
   "resources": [
     {
@@ -257,11 +262,11 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('vmAppName'), '-nic')]",
+      "name": "[concat(variables('vmAppName'), '-nic',copyIndex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
         "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+        "[concat('Microsoft.Network/loadBalancers/',variables('lbName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -269,16 +274,33 @@
             "name": "ipConfigNode",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "10.0.0.10",
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
-              },
+              "privateIPAddress": "[concat('10.0.0.1',copyIndex())]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
-              }
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(variables('lbID'),'/backendAddressPools/LoadBalancerBackend')]"
+                }
+              ],
+              "loadBalancerInboundNatRules": [
+                {
+                  "id": "[concat(variables('lbID'),'/inboundNatRules/LMS-VM',copyIndex())]"
+                },
+                {
+                  "id": "[concat(variables('lbID'),'/inboundNatRules/CMS-VM',copyIndex())]"
+                },
+                {
+                  "id": "[concat(variables('lbID'),'/inboundNatRules/SSH-VM',copyIndex())]"
+                }
+              ]
             }
           }
         ]
+      },
+      "copy": {
+        "name": "appNetworkInterfacesCopy",
+        "count": "[parameters('numberOfAppVMs')]"
       }
     },
     {
@@ -337,12 +359,155 @@
     },
     {
       "apiVersion": "2015-06-15",
+      "name": "[variables('lbName')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location":"[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/',variables('publicIPAddressName'))]"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LoadBalancerFrontend",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[variables('publicIPAddressID')]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "LoadBalancerBackend"
+          }
+        ],
+        "inboundNatRules": [
+          {
+            "name":"LMS-VM0",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id":"[variables('publicIpAddressID')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 18000,
+              "backendPort": 80,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name":"CMS-VM0",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id":"[variables('publicIpAddressID')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 18010,
+              "backendPort": 18010,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name":"SSH-VM0",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id":"[variables('publicIpAddressID')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 2222,
+              "backendPort": 22,
+              "enableFloatingIP": false
+            }
+          },
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "LBRuleLMS",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('publicIpAddressID')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('lbPoolID')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 80,
+              "backendPort": 80,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "loadDistribution": "SourceIP",
+              "probe": {
+                "id": "[variables('lbProbeLMSID')]"
+              }
+            }
+          },
+          {
+            "name": "LBRuleCMS",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('publicIpAddressID')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('lbPoolID')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 18010,
+              "backendPort": 18010,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "loadDistribution": "SourceIP",
+              "probe": {
+                "id": "[variables('lbProbeCMSID')]"
+              }
+            }
+          },
+          {
+            "name": "LBRuleSSL",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('publicIpAddressID')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('lbPoolID')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 443,
+              "backendPort": 443,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "loadDistribution": "SourceIP",
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "tcpProbeLMS",
+            "properties": {
+              "protocol": "tcp",
+              "port": 80,
+              "intervalInSeconds": "5",
+              "numberOfProbes": "2"
+            }
+          },
+          {
+            "name": "tcpProbeCMS",
+            "properties": {
+              "protocol": "tcp",
+              "port": 18010,
+              "intervalInSeconds": "5",
+              "numberOfProbes": "2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('vmAppName')]",
+      "name": "[concat(variables('vmAppName'),copyIndex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', parameters('newStorageAccountName'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('vmAppName'), '-nic')]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('vmAppName'), '-nic', copyIndex())]",
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetNodes'))]"
       ],
       "properties": {
@@ -353,7 +518,7 @@
           "vmSize": "[parameters('vmAppSize')]"
         },
         "osProfile": {
-          "computername": "[variables('vmAppName')]",
+          "computername": "[concat(variables('vmAppName'),copyIndex())]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -365,7 +530,7 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "[concat(variables('vmAppName'),'-osdisk')]",
+            "name": "[concat(variables('vmAppName'),copyIndex(),'-osdisk')]",
             "vhd": {
               "uri": "[concat('http://', parameters('newStorageAccountName'), '.blob.core.windows.net/', variables('vhdBlobContainer'), '/', variables('vmAppName'), '-disk.vhd')]"
             },
@@ -376,10 +541,14 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmAppName'), '-nic'))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmAppName'), '-nic'), copyIndex())]"
             }
           ]
         }
+      },
+      "copy": {
+        "name": "appVMCopy",
+        "count": "numberOfAppVMs"
       }
     },
     {
@@ -400,7 +569,7 @@
           "vmSize": "[parameters('vmMySqlSize')]"
         },
         "osProfile": {
-          "computername": "[variables('vmAppName')]",
+          "computername": "[variables('vmMySqlName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -482,7 +651,7 @@
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('vmAppName'))]"
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmAppName'), '0')]"
       ],
       "properties": {
         "publisher": "Microsoft.OSTCExtensions",
