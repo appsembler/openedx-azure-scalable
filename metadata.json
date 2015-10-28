@@ -1,0 +1,7 @@
+{
+  "itemDisplayName": "Create an Open edX multiserver instance",
+  "description": "This template creates three Ubuntu VMs running Open edX.",
+  "summary": "Deploy Open edX multiserver to Azure.",
+  "githubUsername": "tkeemon",
+  "dateUpdated": "2015-10-22"
+}
