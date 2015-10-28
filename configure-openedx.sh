@@ -75,8 +75,10 @@ time sudo apt-get -y update && sudo apt-get -y upgrade
 sudo apt-get -y install sshpass
 ssh-keygen -f $HOMEDIR/.ssh/id_rsa -t rsa -N ''
 
-#copy so ansible can ssh localhost if it decides to
-cat $HOMEDIR/.ssh/id_rsa.pub >> $HOMEDIR/.ssh/authorized_keys && echo "Key copied to localhost"
+#copy ssh key to all app servers (including localhost)
+for i in `seq 1 $NUM_SERVERS`; do
+  cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.1$i 'cat >> .ssh/authorized_keys && echo "Key copied Appserver #$i"'
+done
 #terrible hack for getting keys onto db server
 cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.20 'cat >> .ssh/authorized_keys && echo "Key copied MySQL"'
 cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.30 'cat >> .ssh/authorized_keys && echo "Key copied MongoDB"'
