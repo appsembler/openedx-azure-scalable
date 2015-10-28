@@ -3,7 +3,7 @@
 # print commands and arguments as they are executed
 set -x
 
-echo "Starting Open edX multiserver install on pid $$"
+echo "Starting Open edX scalable multiserver install on pid $$"
 date
 ps axjf
 
@@ -139,7 +139,7 @@ echo "" >> inventory.ini
 echo "[edxapp-server]" >> inventory.ini
 echo "localhost" >> inventory.ini
 
-curl https://raw.githubusercontent.com/tkeemon/openedx-azure-multiserver/master/server-vars.yml > /tmp/server-vars.yml
+curl https://raw.githubusercontent.com/tkeemon/openedx-azure-scalable/master/server-vars.yml > /tmp/server-vars.yml
 
 sudo ansible-playbook -i inventory.ini -u $AZUREUSER --private-key=$HOMEDIR/.ssh/id_rsa multiserver_deploy.yml -e@/tmp/server-vars.yml $EXTRA_VARS $DB_VARS
 

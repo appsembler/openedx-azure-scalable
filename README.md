@@ -1,19 +1,19 @@
-# Open edX multi-server deployment on Azure
+# Open edX multi-server, horizontally scalable deployment on Azure
 
-This is an Azure template to create three Ubuntu VMs: 
-- One application server (edx-platform, xqueue, rabbitmq, elasticsearch)
+This is an Azure template to create two Ubuntu VMs: 
 - One MySQL server (v5.6)
 - One MongoDB server (v2.6)
+and one horizontally scalable application server behind a load balancer.
 
 You can learn more about Open edX here:
 - https://open.edx.org
 - https://github.com/edx/edx-platform
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Ftkeemon%2Fopenedx-azure-multiserver%2Fmaster%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Ftkeemon%2Fopenedx-azure-scalable%2Fmaster%2Fazuredeploy.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
-This template will complete quickly, but the full Open edX install usually takes > 1 hour. To follow along with the progress, ssh into the VM application server and `tail -f /var/log/azure/openedx-multiserver-install.log`
+This template will complete quickly, but the full Open edX install usually takes > 1 hour. To follow along with the progress, ssh into the VM application server and `tail -f /var/log/azure/openedx-scalable-install.log`
 
 # Getting started with Open edX fullstack
 After the install has successfully completed, Supervisor will automatically start LMS (the student facing site) on port 80 and Studio (the course authoing site) on port 18010. Both ports have already been made accessible, so you can simply visit them by opening a browser and navigating to:

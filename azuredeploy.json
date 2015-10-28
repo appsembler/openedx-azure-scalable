@@ -45,6 +45,24 @@
         "description": "The VM role size of the edxapp server"
       }
     },
+    "numberofappvms" : {
+      "type": "int",
+      "defaultValue": 1,
+      "allowedValues": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "metadata": {
+        "description": "Number of application servers behind the load balancer"
+      }
+    },
     "vmMySqlSize": {
       "type": "string",
       "defaultValue": "Standard_D1",
@@ -93,9 +111,9 @@
     "publicIPAddressNameMySql": "myPublicIPMySql",
     "publicIPAddressNameMongo": "myPublicIPMongo",
     "publicIPAddressType": "Dynamic",
-    "customScriptLocation": "https://raw.githubusercontent.com/tkeemon/openedx-azure-multiserver/master/",
+    "customScriptLocation": "https://raw.githubusercontent.com/tkeemon/openedx-azure-scalable/master/",
     "wgetCommandPrefix": "[concat('wget --tries 20 --retry-connrefused --waitretry=15 -qO- ', variables('customScriptLocation'), 'configure-openedx.sh | nohup /bin/bash -s ')]",
-    "wgetCommandPostfix":  " > /var/log/azure/openedx-multiserver-install.log 2>&1 &'",
+    "wgetCommandPostfix":  " > /var/log/azure/openedx-scalable-install.log 2>&1 &'",
     "commandPrefix": "/bin/bash -c '",
     "OSDiskName": "osdisk",
     "nicName": "vmNic",

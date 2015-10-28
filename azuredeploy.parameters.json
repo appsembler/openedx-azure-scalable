@@ -14,6 +14,9 @@
   "vmappsize" : {
     "value": "Standard_D2"
   },
+  "numberofappvms" : {
+    "value": 1
+  },
   "vmmysqlsize" : {
     "value": "Standard_D2"
   },
