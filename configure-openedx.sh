@@ -76,7 +76,7 @@ sudo apt-get -y install sshpass
 ssh-keygen -f $HOMEDIR/.ssh/id_rsa -t rsa -N ''
 
 #copy ssh key to all app servers (including localhost)
-for i in `seq 1 $NUM_SERVERS`; do
+for i in `seq 0 $(($NUM_SERVERS-1))`; do
   cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.1$i 'cat >> .ssh/authorized_keys && echo "Key copied Appserver #$i"'
 done
 #terrible hack for getting keys onto db server
@@ -117,9 +117,14 @@ export DB_VARS=" \
   -e EDXLOCAL_MEMCACHED_BIND_IP=0.0.0.0 \
   -e XQUEUE_MYSQL_HOST=10.0.0.20 \
   -e ORA_MYSQL_HOST=10.0.0.20 \
-  -e EDXAPP_MONGO_HOSTS=[10.0.0.30] \
   -e MONGO_BIND_IP=0.0.0.0 \
 "
+
+export MONGO_HOST_LISTS=" \
+  -e { \
+    \"FORUM_MONGO_HOSTS\": [\"10.0.0.30\"], \
+    \"EDXAPP_MONGO_HOSTS\": [\"10.0.0.30\"] \
+  }"
 
 ###################################################
 # Download configuration repo and start ansible
@@ -140,7 +145,7 @@ echo "[mysql-server]" >> inventory.ini
 echo "10.0.0.20" >> inventory.ini
 echo "" >> inventory.ini
 echo "[edxapp-server]" >> inventory.ini
-for i in `seq 1 $NUM_SERVERS`; do
+for i in `seq 0 $(($NUM_SERVERS-1))`; do
   echo "10.0.0.1$i" >> inventory.ini
 done
 

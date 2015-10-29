@@ -131,7 +131,8 @@
     "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('lbName'))]",
     "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/LoadBalancerBackend')]",
     "lbProbeLMSID": "[concat(variables('lbID'),'/probes/tcpProbeLMS')]",
-    "lbProbeCMSID": "[concat(variables('lbID'),'/probes/tcpProbeCMS')]"
+    "lbProbeCMSID": "[concat(variables('lbID'),'/probes/tcpProbeCMS')]",
+    "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/loadBalancerFrontend')]"
   },
   "resources": [
     {
@@ -265,7 +266,7 @@
       "name": "[concat(variables('vmAppName'), '-nic',copyIndex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
         "[concat('Microsoft.Network/loadBalancers/',variables('lbName'))]"
       ],
       "properties": {
@@ -285,13 +286,7 @@
               ],
               "loadBalancerInboundNatRules": [
                 {
-                  "id": "[concat(variables('lbID'),'/inboundNatRules/LMS-VM',copyIndex())]"
-                },
-                {
-                  "id": "[concat(variables('lbID'),'/inboundNatRules/CMS-VM',copyIndex())]"
-                },
-                {
-                  "id": "[concat(variables('lbID'),'/inboundNatRules/SSH-VM',copyIndex())]"
+                  "id": "[concat(variables('lbID'),'/inboundNatRules/SSH-VM', copyIndex())]"
                 }
               ]
             }
@@ -361,7 +356,7 @@
       "apiVersion": "2015-06-15",
       "name": "[variables('lbName')]",
       "type": "Microsoft.Network/loadBalancers",
-      "location":"[parameters('location')]",
+      "location":"[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/publicIPAddresses/',variables('publicIPAddressName'))]"
       ],
@@ -383,34 +378,10 @@
         ],
         "inboundNatRules": [
           {
-            "name":"LMS-VM0",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id":"[variables('publicIpAddressID')]"
-              },
-              "protocol": "tcp",
-              "frontendPort": 18000,
-              "backendPort": 80,
-              "enableFloatingIP": false
-            }
-          },
-          {
-            "name":"CMS-VM0",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id":"[variables('publicIpAddressID')]"
-              },
-              "protocol": "tcp",
-              "frontendPort": 18010,
-              "backendPort": 18010,
-              "enableFloatingIP": false
-            }
-          },
-          {
             "name":"SSH-VM0",
             "properties": {
               "frontendIPConfiguration": {
-                "id":"[variables('publicIpAddressID')]"
+                "id":"[variables('frontEndIPConfigID')]"
               },
               "protocol": "tcp",
               "frontendPort": 2222,
@@ -418,13 +389,25 @@
               "enableFloatingIP": false
             }
           },
+          {
+            "name":"SSH-VM1",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id":"[variables('frontEndIPConfigID')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 2223,
+              "backendPort": 22,
+              "enableFloatingIP": false
+            }
+          }
         ],
         "loadBalancingRules": [
           {
             "name": "LBRuleLMS",
             "properties": {
               "frontendIPConfiguration": {
-                "id": "[variables('publicIpAddressID')]"
+                "id": "[variables('frontEndIPConfigID')]"
               },
               "backendAddressPool": {
                 "id": "[variables('lbPoolID')]"
@@ -444,7 +427,7 @@
             "name": "LBRuleCMS",
             "properties": {
               "frontendIPConfiguration": {
-                "id": "[variables('publicIpAddressID')]"
+                "id": "[variables('frontEndIPConfigID')]"
               },
               "backendAddressPool": {
                 "id": "[variables('lbPoolID')]"
@@ -464,7 +447,7 @@
             "name": "LBRuleSSL",
             "properties": {
               "frontendIPConfiguration": {
-                "id": "[variables('publicIpAddressID')]"
+                "id": "[variables('frontEndIPConfigID')]"
               },
               "backendAddressPool": {
                 "id": "[variables('lbPoolID')]"
@@ -474,7 +457,7 @@
               "backendPort": 443,
               "enableFloatingIP": false,
               "idleTimeoutInMinutes": 5,
-              "loadDistribution": "SourceIP",
+              "loadDistribution": "SourceIP"
             }
           }
         ],
@@ -532,7 +515,7 @@
           "osDisk": {
             "name": "[concat(variables('vmAppName'),copyIndex(),'-osdisk')]",
             "vhd": {
-              "uri": "[concat('http://', parameters('newStorageAccountName'), '.blob.core.windows.net/', variables('vhdBlobContainer'), '/', variables('vmAppName'), '-disk.vhd')]"
+              "uri": "[concat('http://', parameters('newStorageAccountName'), '.blob.core.windows.net/', variables('vhdBlobContainer'), '/', variables('vmAppName'), copyIndex(), '-disk.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -541,14 +524,14 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmAppName'), '-nic'), copyIndex())]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmAppName'), '-nic', copyIndex()))]"
             }
           ]
         }
       },
       "copy": {
         "name": "appVMCopy",
-        "count": "numberOfAppVMs"
+        "count": "[parameters('numberOfAppVMs')]"
       }
     },
     {
@@ -647,7 +630,7 @@
     },    
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmAppName'), '/configuremaster')]",
+      "name": "[concat(variables('vmAppName'), '0', '/configuremaster')]",
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "dependsOn": [
@@ -658,7 +641,7 @@
         "type": "CustomScriptForLinux",
         "typeHandlerVersion": "1.3",
         "settings": {
-          "commandToExecute": "[concat(variables('commandPrefix'), variables('wgetCommandPrefix'), parameters('adminUsername'), ' ', parameters('adminPassword'), ' ', parameters('numberOfAppVMs') variables('wgetCommandPostfix'))]"
+          "commandToExecute": "[concat(variables('commandPrefix'), variables('wgetCommandPrefix'), parameters('adminUsername'), ' ', parameters('adminPassword'), ' ', parameters('numberOfAppVMs'), variables('wgetCommandPostfix'))]"
         }
       }
     }
