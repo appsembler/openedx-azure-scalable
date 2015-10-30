@@ -15,6 +15,15 @@ You can learn more about Open edX here:
 
 This template will complete quickly, but the full Open edX install usually takes > 1 hour. To follow along with the progress, ssh into the VM application server and `tail -f /var/log/azure/openedx-scalable-install.log`
 
+The first application server (VM-APP0) provisions all of the other machines. The loadbalancer allows ssh to pass through to this virtual machine over port 2222. So use:
+```
+ssh -p2222 YOUR_USER_NAME@YOUR_INSTNACES_DNS_NAME.cloudapp.azure.com
+```
+to access. Once inside VM-APP0, you can ssh into any other VM using its private IP address.
+- Application servers (1-9): 10.0.0.10 to 10.0.0.19
+- MySQL: 10.0.0.20
+- MongoDB: 10.0.0.30
+
 # Getting started with Open edX fullstack
 After the install has successfully completed, Supervisor will automatically start LMS (the student facing site) on port 80 and Studio (the course authoing site) on port 18010. Both ports have already been made accessible, so you can simply visit them by opening a browser and navigating to:
  - LMS: http://YOUR_INSTANCES_DNS_NAME.cloudapp.azure.com 
