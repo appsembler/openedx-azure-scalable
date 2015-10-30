@@ -99,32 +99,33 @@ time sudo pip install --upgrade virtualenv
 # Pin specific version of Open edX (named-release/cypress for now)
 ###################################################
 export OPENEDX_RELEASE='named-release/cypress'
-export EXTRA_VARS="-e edx_platform_version=$OPENEDX_RELEASE \
-  -e certs_version=$OPENEDX_RELEASE \
-  -e forum_version=$OPENEDX_RELEASE \
-  -e xqueue_version=$OPENEDX_RELEASE \
-  -e configuration_version=appsembler/azureDeploy \
-  -e edx_ansible_source_repo=https://github.com/appsembler/configuration \
-"
+cat >/tmp/extra_vars.yml <<EOL
+---
+edx_platform_version: "$OPENEDX_RELEASE"
+certs_version: "$OPENEDX_RELEASE"
+forum_version: "$OPENEDX_RELEASE"
+xqueue_version: "$OPENEDX_RELEASE"
+configuration_version: "appsembler/azureDeploy"
+edx_ansible_source_repo: "https://github.com/appsembler/configuration"
+
+EOL
 
 ###################################################
 # Set database vars
 ###################################################
-export DB_VARS=" \
-  -e EDXAPP_MYSQL_USER_HOST=% \
-  -e EDXAPP_MYSQL_HOST=10.0.0.20 \
-  -e EDXLOCAL_MYSQL_BIND_IP=0.0.0.0 \
-  -e EDXLOCAL_MEMCACHED_BIND_IP=0.0.0.0 \
-  -e XQUEUE_MYSQL_HOST=10.0.0.20 \
-  -e ORA_MYSQL_HOST=10.0.0.20 \
-  -e MONGO_BIND_IP=0.0.0.0 \
-"
+cat >/tmp/db_vars.yml <<EOL 
+---
+EDXAPP_MYSQL_USER_HOST: "%"
+EDXAPP_MYSQL_HOST: "10.0.0.20"
+EDXLOCAL_MYSQL_BIND_IP: "0.0.0.0"
+EDXLOCAL_MEMCACHED_BIND_IP: "0.0.0.0"
+XQUEUE_MYSQL_HOST: "10.0.0.20"
+ORA_MYSQL_HOST: "10.0.0.20"
+MONGO_BIND_IP: "0.0.0.0"
+FORUM_MONGO_HOSTS: ["10.0.0.30"]
+EDXAPP_MONGO_HOSTS: ["10.0.0.30"]
 
-export MONGO_HOST_LISTS=" \
-  -e { \
-    \"FORUM_MONGO_HOSTS\": [\"10.0.0.30\"], \
-    \"EDXAPP_MONGO_HOSTS\": [\"10.0.0.30\"] \
-  }"
+EOL
 
 ###################################################
 # Download configuration repo and start ansible
@@ -151,7 +152,7 @@ done
 
 curl https://raw.githubusercontent.com/tkeemon/openedx-azure-scalable/master/server-vars.yml > /tmp/server-vars.yml
 
-sudo ansible-playbook -i inventory.ini -u $AZUREUSER --private-key=$HOMEDIR/.ssh/id_rsa multiserver_deploy.yml -e@/tmp/server-vars.yml $EXTRA_VARS $DB_VARS
+sudo ansible-playbook -i inventory.ini -u $AZUREUSER --private-key=$HOMEDIR/.ssh/id_rsa multiserver_deploy.yml -e@/tmp/server-vars.yml -e@/tmp/extra_vars.yml -e@/tmp/db_vars.yml
 
 date
 echo "Completed Open edX multiserver provision on pid $$"
