@@ -146,8 +146,11 @@ echo "" >> inventory.ini
 echo "[mysql-server]" >> inventory.ini
 echo "10.0.0.20" >> inventory.ini
 echo "" >> inventory.ini
-echo "[edxapp-server]" >> inventory.ini
-for i in `seq 0 $(($NUM_SERVERS-1))`; do
+echo "[edxapp-primary-server]" >> inventory.ini
+echo "localhost" >> inventory.ini
+echo "" >> inventory.ini
+echo "[edxapp-additional-server]" >> inventory.ini
+for i in `seq 1 $(($NUM_SERVERS-1))`; do
   echo "10.0.0.1$i" >> inventory.ini
 done
 
