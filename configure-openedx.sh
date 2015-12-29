@@ -17,7 +17,8 @@ ps axjf
 AZUREUSER=$1
 PASSWORD=$2
 NUM_APP_SERVERS=$3
-NUM_MONGO_SERVERS=$4
+NUM_MYSQL_SERVERS=$4
+NUM_MONGO_SERVERS=$5
 HOMEDIR="/home/$AZUREUSER"
 VMNAME=`hostname`
 echo "User: $AZUREUSER"
@@ -84,7 +85,9 @@ for i in `seq 0 $(($NUM_APP_SERVERS-1))`; do
   cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.1$i 'cat >> .ssh/authorized_keys && echo "Key copied Appserver #$i"'
 done
 #terrible hack for getting keys onto db server
-cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.20 'cat >> .ssh/authorized_keys && echo "Key copied MySQL"'
+for i in `seq 0 $(($NUM_MYSQL_SERVERS-1))`; do
+  cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.2$i 'cat >> .ssh/authorized_keys && echo "Key copied MySQL #$i"'
+done
 
 for i in `seq 0 $(($NUM_MONGO_SERVERS-1))`; do
   cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.3$1 'cat >> .ssh/authorized_keys && echo "Key copied MongoDB #$i"'
