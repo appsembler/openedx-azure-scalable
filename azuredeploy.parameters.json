@@ -20,6 +20,9 @@
   "vmmysqlsize" : {
     "value": "Standard_D2"
   },
+    "numberofmysqlvms" : {
+    "value": 1
+  },
   "vmmongosize" : {
     "value": "Standard_D2"
   },
