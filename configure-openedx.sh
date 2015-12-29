@@ -90,7 +90,7 @@ for i in `seq 0 $(($NUM_MYSQL_SERVERS-1))`; do
 done
 
 for i in `seq 0 $(($NUM_MONGO_SERVERS-1))`; do
-  cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.3$1 'cat >> .ssh/authorized_keys && echo "Key copied MongoDB #$i"'
+  cat $HOMEDIR/.ssh/id_rsa.pub | sshpass -p $PASSWORD ssh -o "StrictHostKeyChecking no" $AZUREUSER@10.0.0.3$i 'cat >> .ssh/authorized_keys && echo "Key copied MongoDB #$i"'
 done
 
 #make sure premissions are correct
@@ -151,13 +151,14 @@ cd playbooks/appsemblerPlaybooks
 
 #create inventory.ini file
 echo "[mongo-server]" > inventory.ini
-for i in `seq 1 $(($NUM_MONGO_SERVERS-1))`; do
+for i in `seq 0 $(($NUM_MONGO_SERVERS-1))`; do
   echo "10.0.0.3$i" >> inventory.ini
 done
 echo "" >> inventory.ini
 echo "[mysql-master-server]" >> inventory.ini
 echo "10.0.0.20" >> inventory.ini
 if (( $NUM_MYSQL_SERVERS > 1 )); then
+  echo "" >> inventory.ini
   echo "[mysql-slave-server]" >> inventory.ini
   echo "10.0.0.21" >> inventory.ini
 fi

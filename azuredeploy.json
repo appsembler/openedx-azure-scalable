@@ -125,7 +125,7 @@
       "metadata": {
         "description": "Number of MongoDB servers in cluster"
       }
-    },
+    }
   },
   "variables": {
     "vmAppName": "openedx-scalable-app",
@@ -333,7 +333,6 @@
       "name": "[concat(variables('vmMySqlName'), '-nic', copyIndex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressNameMySql'))]",
         "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
       ],
       "properties": {
@@ -342,10 +341,7 @@
             "name": "ipConfigNode",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat('10.0.0.2', copyIndex()]",
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressNameMySql'))]"
-              },
+              "privateIPAddress": "[concat('10.0.0.2', copyIndex())]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               }
@@ -361,10 +357,9 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('vmMongoName'), '-nic'), copyIndex()]",
+      "name": "[concat(variables('vmMongoName'), '-nic', copyIndex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressNameMongo'))]",
         "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
       ],
       "properties": {
@@ -374,9 +369,6 @@
             "properties": {
               "privateIPAllocationMethod": "Static",
               "privateIPAddress": "[concat('10.0.0.3', copyIndex())]",
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressNameMongo'))]"
-              },
               "subnet": {
                 "id": "[variables('subnetRef')]"
               }
