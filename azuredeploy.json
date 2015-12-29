@@ -625,7 +625,7 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('vmMongoName')]",
+      "name": "[concat(variables('vmMongoName'), copyIndex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', parameters('newStorageAccountName'))]",
@@ -640,7 +640,7 @@
           "vmSize": "[parameters('vmMongoSize')]"
         },
         "osProfile": {
-          "computername": "[variables('vmMongoName')]",
+          "computername": "[concat(variables('vmMongoName'), copyIndex())]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -652,9 +652,9 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "[concat(variables('vmMongoName'),'-osdisk')]",
+            "name": "[concat(variables('vmMongoName'), copyIndex(), '-osdisk')]",
             "vhd": {
-              "uri": "[concat('http://', parameters('newStorageAccountName'), '.blob.core.windows.net/', variables('vhdBlobContainer'), '/', variables('vmMongoName'), '-disk.vhd')]"
+              "uri": "[concat('http://', parameters('newStorageAccountName'), '.blob.core.windows.net/', variables('vhdBlobContainer'), '/', variables('vmMongoName'), copyIndex(), '-disk.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -663,7 +663,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmMongoName'), '-nic'))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmMongoName'), '-nic', copyIndex()))]"
             }
           ]
         }
