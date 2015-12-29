@@ -23,4 +23,7 @@
   "vmmongosize" : {
     "value": "Standard_D2"
   },
+  "numberofmongovms" : {
+    "value": 1
+  },
 }
