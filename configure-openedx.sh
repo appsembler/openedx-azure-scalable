@@ -155,8 +155,12 @@ for i in `seq 1 $(($NUM_MONGO_SERVERS-1))`; do
   echo "10.0.0.3$i" >> inventory.ini
 done
 echo "" >> inventory.ini
-echo "[mysql-server]" >> inventory.ini
+echo "[mysql-master-server]" >> inventory.ini
 echo "10.0.0.20" >> inventory.ini
+if (( $NUM_MYSQL_SERVERS > 1 )); then
+  echo "[mysql-slave-server]" >> inventory.ini
+  echo "10.0.0.21" >> inventory.ini
+fi
 echo "" >> inventory.ini
 echo "[edxapp-primary-server]" >> inventory.ini
 echo "localhost" >> inventory.ini
